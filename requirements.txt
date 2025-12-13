@@ -1,5 +1,5 @@
 pandas
 python-dotenv
-pinecone-client
+pinecone
 openai
 langchain-text-splitters
