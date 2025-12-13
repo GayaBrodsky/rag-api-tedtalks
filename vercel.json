@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "build": {
+    "env": {
+      "VERCEL_OUTPUT_DIRECTORY": "dist"
+    },
+    "output": {
+      "includeFiles": [
+        "api/**/*",
+        "utils/**/*",
+        "requirements.txt",
+        "ted_talks_en.csv"
+      ]
+    }
+  }
+}
