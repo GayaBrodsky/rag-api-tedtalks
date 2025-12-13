@@ -3,26 +3,10 @@
   "builds": [
     {
       "src": "api/*.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.9",  // <-- CHANGE MADE HERE
-        "includeFiles": [
-          "utils/**/*.py",
-          "ted_talks_en.csv",
-          "requirements.txt",
-          "runtime.txt"
-        ]
-      }
+      "use": "@vercel/python"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/stats",
-      "dest": "api/stats.py"
-    },
-    {
-      "src": "/api/prompt",
-      "dest": "api/prompt.py"
-    }
-  ]
+  "env": {
+    "PYTHON_VERSION": "3.9"
+  }
 }
