@@ -2,3 +2,4 @@ pandas
 python-dotenv
 pinecone-client
 openai
+langchain-text-splitters
