@@ -6,7 +6,14 @@
       "use": "@vercel/python"
     }
   ],
-  "env": {
-    "PYTHON_VERSION": "3.9"
-  }
+  "routes": [
+    {
+      "src": "/api/stats",
+      "dest": "api/stats.py"
+    },
+    {
+      "src": "/api/prompt",
+      "dest": "api/prompt.py"
+    }
+  ]
 }
