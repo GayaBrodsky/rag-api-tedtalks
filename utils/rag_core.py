@@ -20,24 +20,6 @@ prioritize meeting the requested number (e.g., 3) by using any talk title presen
 even if its relevance is partial.
 """
 
-def initialize_components():
-    # Deferred Imports (moved from top of file)
-    from pinecone import Pinecone, ServerlessSpec
-    from openai import OpenAI
-
-    # Get credentials (now inside function)
-    PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
-    LLMOD_API_KEY = os.getenv('LLMOD_API_KEY')
-    INDEX_NAME = os.getenv('PINECONE_INDEX_NAME')
-    LLMOD_BASE_URL = "https://api.llmod.ai"
-
-    # Initialize Pinecone and OpenAI Embedding Client
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-    embedding_client = OpenAI(api_key=LLMOD_API_KEY, base_url=LLMOD_BASE_URL)
-    index = pc.Index(INDEX_NAME)
-
-    return index, embedding_client
-
 # Retrival Function: embeds the query and retrieves the top_k most relevant chunks
 def retrieve_context(query, index, embedding_client, top_k=TOP_K):
     # Embed the query using the RPRTHPB-text-embedding-3-small model
@@ -89,6 +71,20 @@ def generate_response(system_prompt, user_prompt, embedding_client):
 
 # Main function to handle the RAG process
 def answer_ted_query(query, index, embedding_client):
+    from pinecone import Pinecone, ServerlessSpec
+    from openai import OpenAI
+
+    # Get credentials (moved from initialize_components)
+    PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
+    LLMOD_API_KEY = os.getenv('LLMOD_API_KEY')
+    INDEX_NAME = os.getenv('PINECONE_INDEX_NAME')
+    LLMOD_BASE_URL = "https://api.llmod.ai"
+
+    # Initialize Pinecone and OpenAI Embedding Client (moved from initialize_components)
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+    embedding_client = OpenAI(api_key=LLMOD_API_KEY, base_url=LLMOD_BASE_URL)
+    index = pc.Index(INDEX_NAME)
+    
     # Retrieve relevant context chunks
     context_chunks = retrieve_context(query, index, embedding_client)
 

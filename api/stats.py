@@ -1,16 +1,10 @@
 import json
-from utils.rag_core import CHUNK_SIZE, OVERLAP_RATIO, TOP_K, initialize_components
+from utils.rag_core import CHUNK_SIZE, OVERLAP_RATIO, TOP_K
 
 # API handler function
 def handler(request):
     if request.method != 'GET':
         return json.dumps({"error": "Method not allowed"}), 405
-
-    try:
-        index, embedding_client = initialize_components()
-    except Exception as e:
-        return json.dumps({"error": "Internal server error during component initialization.", "detail": str(e)}), 500
-
 
     stats = {
         "chunk_size": CHUNK_SIZE,
