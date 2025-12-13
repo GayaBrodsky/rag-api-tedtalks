@@ -1,6 +1,5 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
-from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 from openai import OpenAI
 
@@ -25,7 +24,6 @@ even if its relevance is partial.
 """
 
 # Get credentials 
-load_dotenv()
 PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
 LLMOD_API_KEY = os.getenv('LLMOD_API_KEY')
 INDEX_NAME = os.getenv('PINECONE_INDEX_NAME')
