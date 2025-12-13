@@ -1,9 +1,9 @@
-import pandas as pd
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 from openai import OpenAI
+
 
 # Configuration
 CHUNK_SIZE = 1024
