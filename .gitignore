@@ -1,0 +1,6 @@
+# Exclude sensitive environment variables and keys
+.env
+
+# Exclude compiled Python files (not needed on server)
+__pycache__/
+*.pyc

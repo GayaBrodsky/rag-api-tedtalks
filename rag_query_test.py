@@ -1,0 +1,144 @@
+import pandas as pd
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+import os
+from dotenv import load_dotenv
+from pinecone import Pinecone, ServerlessSpec
+from openai import OpenAI
+
+# Configuration
+TOP_K = 5  # Number of top similar chunks to retrieve
+SYSTEM_PROMPT = """
+You are a TED Talk assistant that answers questions strictly and only based on the 
+TED dataset context provided to you (metadata and transcript passages).
+You must not use any external knowledge, the open internet, or information that is not 
+explicitly contained in the retrieved context.
+If the answer cannot be determined from the provided context, respond: 
+"I don't know based on the provided TED data."
+Always explain your answer using the given context, quoting or paraphrasing the 
+relevant transcript or metadata when helpful.
+For multi-result listing queries (e.g., 'list 3 titles'),
+prioritize meeting the requested number (e.g., 3) by using any talk title present in the retrieved context,
+even if its relevance is partial.
+"""
+
+# Get credentials 
+load_dotenv()
+PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
+LLMOD_API_KEY = os.getenv('LLMOD_API_KEY')
+INDEX_NAME = os.getenv('PINECONE_INDEX_NAME')
+LLMOD_BASE_URL = "https://api.llmod.ai"
+
+# Initialize Pinecone and OpenAI Embedding Client
+pc = Pinecone(api_key=PINECONE_API_KEY)
+embedding_client = OpenAI(api_key=LLMOD_API_KEY, base_url=LLMOD_BASE_URL)
+index = pc.Index(INDEX_NAME)
+
+# Retrival Function: embeds the query and retrieves the top_k most relevant chunks
+def retrieve_context(query, index, embedding_client, top_k=TOP_K):
+    # Embed the query using the RPRTHPB-text-embedding-3-small model
+    embedding_response = embedding_client.embeddings.create(
+        model="RPRTHPB-text-embedding-3-small",
+        input=[query]
+    )
+    query_vector = embedding_response.data[0].embedding
+
+    # Query Pincecone: search for the most similar chunks
+    results = index.query(
+        vector=query_vector,
+        top_k=top_k,
+        include_metadata=True
+    )
+
+    # Format the results
+    context_chunks = []
+    for match in results['matches']:
+        context_chunks.append({
+            'talk_id': match.metadata['talk_id'],
+            'title': match.metadata['title'],
+            'chunk': match.metadata['text'],
+            'score': match.score
+        })
+    return context_chunks
+
+# Prompt augmentation function: formats retrieved context into a single string for the LLM.   
+def create_augmented_prompt(query, context_chunks): 
+    context_text = "\n\n--- Retrieved Context Chunks ---\n"
+    for i, chunk in enumerate(context_chunks):
+        context_text += f"SOURCE TALK {i+1} (Title: {chunk['title']}, Talk ID: {chunk['talk_id']}):\n"
+        context_text += chunk['chunk'] + "\n---\n"
+
+    user_prompt = f"User question: {query}\n\n{context_text}"
+    return user_prompt    
+
+# Generation: calls the RPRTHPB-gpt-5-mini model to generate the final answer
+def generate_response(system_prompt, user_prompt, embedding_client):
+    response = embedding_client.chat.completions.create(
+        model = "RPRTHPB-gpt-5-mini",
+        messages = [
+            {"role": "system", "content": system_prompt}, # Define the assistant's behavior
+            {"role": "user", "content": user_prompt} # Provide the user's question and context
+        ],
+        temperature = 1.0 
+    )
+    return response.choices[0].message.content
+
+# Main function to handle the RAG process
+def answer_ted_query(query, index, embedding_client):
+    # Retrieve relevant context chunks
+    context_chunks = retrieve_context(query, index, embedding_client)
+
+    # Create augmented prompt
+    augmented_user_prompt = create_augmented_prompt(query, context_chunks)
+
+    # Generate response using the LLM
+    final_response = generate_response(SYSTEM_PROMPT, augmented_user_prompt, embedding_client)
+
+    return {
+        "response": final_response,
+        "context": context_chunks,
+        "Augmented Prompt": {
+            "System": SYSTEM_PROMPT,
+            "User": augmented_user_prompt
+        }               
+        }
+    
+    
+# Run the tests
+if __name__ == "__main__":
+    print("\n--- Running RAG Functional Tests ---")
+    
+    # 1. Precise Fact Retrieval
+    query_1 = "Find a TED talk that discusses overcoming fear or anxiety. Provide the title and speaker."
+    result_1 = answer_ted_query(query_1, index, embedding_client)
+    print("\n--- Test 1: Precise Fact Retrieval ---")
+    print("Query:", query_1)
+    print("Response:", result_1['response'])
+    print("---")
+    
+    # 2. Multi-Result Topic Listing (Must list exactly 3 talks)
+    query_2 = "Which TED talk focuses on education or learning? Return a list of exactly 3 talk titles."
+    result_2 = answer_ted_query(query_2, index, embedding_client)
+    print("\n--- Test 2: Multi-Result Topic Listing ---")
+    print("Query:", query_2)
+    print("Response:", result_2['response'])
+    print("---")
+    
+    # 3. Key Idea Summary Extraction
+    query_3 = "Find a TED talk where the speaker talks about technology improving people's lives. Provide the title and a short summary of the key idea."
+    result_3 = answer_ted_query(query_3, index, embedding_client)
+    print("\n--- Test 3: Key Idea Summary Extraction ---")
+    print("Query:", query_3)
+    print("Response:", result_3['response'])
+    print("---")
+
+    # 4. Recommendation with Evidence-Based Justification
+    query_4 = "I'm looking for a TED talk about climate change and what individuals can do in their daily lives. Which talk would you recommend?"
+    result_4 = answer_ted_query(query_4, index, embedding_client)
+    print("\n--- Test 4: Recommendation with Justification ---")
+    print("Query:", query_4)
+    print("Response:", result_4['response'])
+    print("---")    
+    
+    
+
+

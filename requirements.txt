@@ -1,0 +1,5 @@
+pandas
+python-dotenv
+pinecone-client
+openai
+vercel-helpers
