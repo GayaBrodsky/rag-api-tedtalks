@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/*.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.9"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/stats",
+      "dest": "api/stats.py"
+    },
+    {
+      "src": "/api/prompt",
+      "dest": "api/prompt.py"
+    }
+  ]
+}
