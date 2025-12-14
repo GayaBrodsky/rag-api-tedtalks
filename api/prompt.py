@@ -1,33 +1,68 @@
 import json
-from utils import rag_core # Import the whole module
+import sys
+import os
 
-# API handler function
-def handler(request):
-    # This endpoint typically handles POST requests with a query in the body
-    if request.method != 'POST':
-        # Prompting endpoint should only accept POST requests
-        return json.dumps({"error": "Method not allowed. Use POST request."}), 405
+# Add the parent directory to the path so we can import utils
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+try:
+    from utils import rag_core
+except ImportError:
+    # For Vercel deployment
+    import rag_core
+
+def handler(event, context):
+    """Vercel serverless function handler"""
+    if event['httpMethod'] != 'POST':
+        return {
+            'statusCode': 405,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({"error": "Method not allowed. Use POST."})
+        }
+    
     try:
-        # Load the request body data (where the user query is located)
-        data = json.loads(request.body)
-        query = data.get("query")
+        # Parse the request body
+        data = json.loads(event.get('body', '{}'))
+        query = data.get("query") or data.get("question")  # Support both "query" and "question"
         
         if not query:
-            return json.dumps({"error": "Query parameter missing from request body."}), 400
-
-        # 1. Initialize Clients (Pinecone/OpenAI) - Done inside the rag_core file with lazy imports
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({"error": "Missing 'question' or 'query' parameter"})
+            }
+        
+        # Initialize components
         index, embedding_client = rag_core.initialize_components()
-
-        # 2. Run the main RAG function
+        
+        # Run RAG query
         result = rag_core.answer_ted_query(query, index, embedding_client)
-
-        # 3. Return the final RAG response
-        return json.dumps(result), 200, {'Content-Type': 'application/json'}
-
+        
+        # Format response to match assignment requirements
+        formatted_result = {
+            "response": result.get("response", ""),
+            "context": result.get("context", []),
+            "Augmented_prompt": {
+                "System": result.get("Augmented Prompt", {}).get("System", rag_core.SYSTEM_PROMPT),
+                "User": result.get("Augmented Prompt", {}).get("User", "")
+            }
+        }
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps(formatted_result)
+        }
+        
     except json.JSONDecodeError:
-        return json.dumps({"error": "Invalid JSON format in request body."}), 400
-    
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({"error": "Invalid JSON format"})
+        }
     except Exception as e:
-        # Fallback for any other unexpected error (e.g., Pinecone/OpenAI connection issue)
-        return json.dumps({"error": "An internal processing error occurred.", "detail": str(e)}), 500
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({"error": f"Internal server error: {str(e)}"})
+        }
