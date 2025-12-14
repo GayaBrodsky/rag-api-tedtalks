@@ -33,3 +33,4 @@ def handler(event, context):
 
 # Vercel needs this export
 __all__ = ["handler"]
+vc_handler = handler
