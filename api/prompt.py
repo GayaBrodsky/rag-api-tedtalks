@@ -1,17 +1,37 @@
 import json
 import sys
 import os
+import traceback
 
-# Add the parent directory to the path so we can import utils
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.stderr.write = sys.stdout.write
 
 try:
-    from utils import rag_core
-except ImportError:
-    # For Vercel deployment
+    # Try importing from the same directory (api folder)
     import rag_core
+    print("DEBUG: Imported rag_core from api folder")
+except ImportError as import_err:
+    print(f"DEBUG: First import failed: {import_err}")
+    # Try another method if needed
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import rag_core
+        print("DEBUG: Imported rag_core after adding path")
+    except ImportError:
+        print("DEBUG: All import attempts failed")
+        # Create empty rag_core to prevent crashes
+        rag_core = None
+
 
 def handler(event, context):
+    """Vercel serverless function handler"""
+    # Check if rag_core was imported successfully
+    if rag_core is None:
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({"error": "Failed to import rag_core module"})
+        }
+    
     """Vercel serverless function handler"""
     if event['httpMethod'] != 'POST':
         return {
