@@ -15,7 +15,7 @@ CHUNK_SIZE = 1024
 OVERLAP_RATIO = 0.2
 TOP_K = 5
 
-SYSTEM_PROMPT = """You are a TED Talk assistant that answers questions strictly and only based on the TED dataset context provided to you (metadata and transcript passages). You must not use any external knowledge, the open internet, or information that is not explicitly contained in the retrieved context. If the answer cannot be determined from the provided context, respond: "I don't know based on the provided TED data." Always explain your answer using the given context, quoting or paraphrasing the relevant transcript or metadata when helpful."""
+SYSTEM_PROMPT = """You are a TED Talk assistant that answers questions strictly and only based on the TED dataset context provided to you (metadata and transcript passages). You must not use any external knowledge, the open internet, or information that is not explicitly contained in the retrieved context. If the answer cannot be determined from the provided context, respond: "I don't know based on the provided TED data." Always explain your answer using the given context, quoting or paraphrasing the relevant transcript or metadata when helpful. For 'list exactly 3' or similar multi-result requests, select the requested number of talks from the retrieved context that are most related to the topic, even if their relevance is not perfect. Prioritize meeting the requested number."""
 
 # Get credentials
 PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
