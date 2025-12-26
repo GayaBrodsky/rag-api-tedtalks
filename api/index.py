@@ -62,12 +62,7 @@ def retrieve_context(query, index, embedding_client, top_k=TOP_K):
     return context_chunks
 
 def create_augmented_prompt(query, context_chunks):
-    """Create augmented prompt with context"""
-    context_text = "\n\n--- Retrieved Context Chunks ---\n"
-    for i, chunk in enumerate(context_chunks):
-        context_text += f"SOURCE {i+1} (Title: {chunk['title']}):\n{chunk['chunk']}\n---\n"
-    
-    return f"User question: {query}\n\n{context_text}"
+    return f"User question: {query}"
 
 def generate_response(system_prompt, user_prompt, embedding_client):
     """Generate response using LLM"""
